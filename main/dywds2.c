@@ -164,12 +164,16 @@ static void rx_task(void *arg)
     while (1) {
         const int rxBytes = uart_read_bytes(UART_NUM_1, data, RX_BUF_SIZE, 1000 / portTICK_PERIOD_MS);
         if (rxBytes > 0) {
-            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
+            //ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
+            int i;
+            for(i=0;i<rxBytes;i++) {
+                data[i] &= 0x7f; // Only 7 bits are legal ...
+            }
             ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
 
             uint8_t *p = &data[0];
-            int i;
             for(i=0;i<rxBytes;i++) {
+                *p &= 0x7f;
                 if(*p == ':') /* Start of MODBUS packet */
                     break;
                 else
@@ -197,6 +201,8 @@ static void rx_task(void *arg)
                 s_direction |= v;
                 p+=2;
                 s_speed = atof32(p);
+
+                printf("Wind speed %f, direction %u\n", s_speed, s_direction);
             }
         }
     }

@@ -185,7 +185,20 @@ static void initialise_wifi(void)
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = "F3F-AP-AC",
+            .password = "0925322362",
+            /* Setting a password implies station will connect to all security modes including WEP/WPA.
+             * However these modes are deprecated and not advisable to be used. Incase your Access point
+             * doesn't support WPA2, these mode can be enabled by commenting below line */
+         //.threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
+        },
+    };
+
     ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK( esp_wifi_start() );
 }
 
@@ -416,10 +429,8 @@ static void mcast_task(void *pvParameters)
     {
         /* Wait for all the IPs we care about to be set
         */
-        uint32_t bits = 0;
-        bits |= CONNECTED_BIT;
         ESP_LOGI(TAG, "Waiting for AP connection...");
-        xEventGroupWaitBits(wifi_event_group, bits, false, true, portMAX_DELAY);
+        xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
         ESP_LOGI(TAG, "Connected to AP");
 
         int sock;
@@ -546,20 +557,6 @@ static void mcast_task(void *pvParameters)
     }
 }
 
-
-static void dywds2_task(void *arg)
-{
-    Dywds2_Init();
-    Dywds2_Run();
-
-    while(1) {
-        EventBits_t xBits = xEventGroupGetBits(wifi_event_group);
-        if(xBits & CONNECTED_BIT) {
-
-        }
-    }
-}
-
 void app_main(void)
 {
     esp_err_t ret;
@@ -596,6 +593,8 @@ void app_main(void)
 
     BLUFI_INFO("BLUFI VERSION %04x\n", esp_blufi_get_version());
 
-    xTaskCreate(dywds2_task, "dywds2_task", 8192, NULL, configMAX_PRIORITIES, NULL);
+    Dywds2_Init();
+    Dywds2_Run();
+
     xTaskCreate(mcast_task, "mcast_task", 8192, NULL, configMAX_PRIORITIES, NULL);
 }
