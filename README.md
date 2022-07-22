@@ -1,6 +1,11 @@
 | Supported Targets | ESP32 | ESP32-C3 |
 | ----------------- | ----- | -------- |
 
+# ESP32 Ultrasonic Anemometer Reader
+
+Base on Blufi Example
+Supports DYWDS2 / RK120-07
+
 # ESP-IDF Blufi Example
 
 This demo shows how to use the *Blufi* to configurate the Wi-Fi connection to AP.

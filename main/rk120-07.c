@@ -90,7 +90,7 @@ static void rx_task(void *arg)
 
                 if(numToken == 6) {
                     if(strcmp(strToken[0], "$WIMWV") == 0 &&
-                            strcmp(strToken[2], "T") == 0 &&
+                            strcmp(strToken[2], "R") == 0 &&
                             strncmp(strToken[5], "A*", 2) == 0) {
                         s_speed = atof(strToken[3]);
                         s_direction = (uint16_t)atof(strToken[1]);
