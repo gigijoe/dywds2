@@ -35,6 +35,10 @@
 #include "esp_blufi.h"
 
 #include "dywds2.h"
+#include "rk120-07.h"
+
+#undef DYWDS2
+#define RK120_07
 
 static void example_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *param);
 
@@ -185,11 +189,14 @@ static void initialise_wifi(void)
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-
+#if 1
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = "F3F-AP-AC",
-            .password = "0925322362",
+            //.ssid = "F3F-AP-AC",
+            //.ssid = "gigijoe",
+            //.password = "0925322362",
+            .ssid = "dragon2.4g",
+            .password = "eggyah717",
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
              * However these modes are deprecated and not advisable to be used. Incase your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
@@ -197,9 +204,13 @@ static void initialise_wifi(void)
         },
     };
 
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK( esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_start() );
+#else
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_start() );
+#endif
 }
 
 static esp_blufi_callbacks_t example_callbacks = {
@@ -462,7 +473,7 @@ static void mcast_task(void *pvParameters)
         while (err > 0)
         {
             struct timeval tv = {
-                .tv_sec = 2,
+                .tv_sec = 1,
                 .tv_usec = 0,
             };
             fd_set rfds;
@@ -510,15 +521,18 @@ static void mcast_task(void *pvParameters)
             else
             { // s == 0
                 // Timeout passed with no incoming data, so send something!
-                static int send_count;
-                const char sendfmt[] = "<W%f:%u:%d>";
+                
+                const char sendfmt[] = "WIND:%f:%u";
                 char sendbuf[48];
                 char addrbuf[32] = {0};
-                int len = snprintf(sendbuf, sizeof(sendbuf), sendfmt, Dywds2_WindSpeed(), Dywds2_WindDirection(), send_count);
+#ifdef DYWDS2
+                int len = snprintf(sendbuf, sizeof(sendbuf), sendfmt, Dywds2_WindSpeed(), Dywds2_WindDirection());
+#elif defined(RK120_07)
+                int len = snprintf(sendbuf, sizeof(sendbuf), sendfmt, RK120_07_WindSpeed(), RK120_07_WindDirection());
+#endif
                 if (len > sizeof(sendbuf))
                 {
                     ESP_LOGE(TAG, "Overflowed multicast sendfmt buffer!!");
-                    send_count = 0;
                     err = -1;
                     break;
                 }
@@ -570,7 +584,7 @@ void app_main(void)
     ESP_ERROR_CHECK( ret );
 
     initialise_wifi();
-
+#if 0
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -592,9 +606,13 @@ void app_main(void)
     }
 
     BLUFI_INFO("BLUFI VERSION %04x\n", esp_blufi_get_version());
-
+#endif
+#ifdef DYWDS2
     Dywds2_Init();
     Dywds2_Run();
-
+#elif defined(RK120_07)
+    RK120_07_Init();
+    RK120_07_Run();
+#endif
     xTaskCreate(mcast_task, "mcast_task", 8192, NULL, configMAX_PRIORITIES, NULL);
 }

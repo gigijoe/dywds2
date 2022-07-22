@@ -23,6 +23,7 @@
 #include "dywds2.h"
 
 #include <string.h>
+#include "atox.h"
 
 static const int RX_BUF_SIZE = 1024;
 
@@ -115,47 +116,6 @@ static void tx_task(void *arg)
     }
 }
 
-static uint8_t atohex8(uint8_t *s)
-{
-    uint8_t value = 0;
-    if(!s)
-        return 0;
-
-    if(*s >= '0' && *s <= '9')
-        value = (*s - '0') << 4;
-    else if(*s >= 'A' && *s <= 'F')
-        value = ((*s - 'A') + 10) << 4;
-
-    s++;
-
-    if(*s >= '0' && *s <= '9')
-        value |= (*s - '0');
-    else
-        value |= ((*s - 'A') + 10);
-
-    return value;
-}
-
-union Uint32 {
-    float f;
-    unsigned char u[4];
-};
-
-static float atof32(unsigned char *s)
-{
-    union Uint32 u32;
-
-    u32.u[1] = atohex8(s);
-    s+=2;
-    u32.u[0] = atohex8(s);
-    s+=2;
-    u32.u[3] = atohex8(s);
-    s+=2;
-    u32.u[2] = atohex8(s);
-
-    return u32.f;
-}
-
 static void rx_task(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
@@ -211,8 +171,8 @@ static void rx_task(void *arg)
 
 void Dywds2_Run(void)
 {
-    xTaskCreate(rx_task, "uart_rx_task", 1024*2, NULL, configMAX_PRIORITIES, NULL);
-    xTaskCreate(tx_task, "uart_tx_task", 1024*2, NULL, configMAX_PRIORITIES-1, NULL);
+    xTaskCreate(rx_task, "uart_rx_task", 4096, NULL, configMAX_PRIORITIES, NULL);
+    xTaskCreate(tx_task, "uart_tx_task", 2048, NULL, configMAX_PRIORITIES-1, NULL);
 }
 
 uint16_t Dywds2_WindDirection()
